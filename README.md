@@ -145,62 +145,53 @@ https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32
 
 ## ⚙️ How It Works
 
-### Voice Control
-
-The user speaks a command using a Bluetooth mobile application. The application converts speech into text and sends the command to the ESP32 through Bluetooth.
-
-For example:
-
-```text
-fan on
-```
-
-The ESP32 receives the command, activates Relay 2, turns the fan ON, and updates the OLED display.
-
 ### Gesture Control
 
-The MPU6050 sensor detects hand tilt using accelerometer and gyroscope readings.
+The MPU-6050 reads raw accelerometer values every loop cycle. Normalized `ax` and `ay` values determine gesture:
 
-| Gesture       | Action                      |
-| ------------- | --------------------------- |
-| Tilt Left     | Select previous appliance   |
-| Tilt Right    | Select next appliance       |
-| Tilt Forward  | Turn ON selected appliance  |
-| Tilt Backward | Turn OFF selected appliance |
+| Tilt Direction | Axis | Threshold | Action |
+|---------------|------|-----------|--------|
+| **Right** | ax > +1.2 | Positive X | Select next appliance |
+| **Left** | ax < -1.2 | Negative X | Select previous appliance |
+| **Up** | ay > +1.2 | Positive Y | Turn ON selected appliance |
+| **Down** | ay < -1.2 | Negative Y | Turn OFF selected appliance |
 
-The OLED display highlights the selected appliance during gesture operation.
+A **500ms debounce** prevents accidental repeated triggers. The threshold (`1.2g`) is adjustable in code.
+
+---
+
+### Voice / Bluetooth Control
+
+Connect to Bluetooth device named **`ESP32_Home`** using any serial Bluetooth terminal (e.g. *Serial Bluetooth Terminal* on Android).
+
+Send text commands (followed by newline `\n`) or single characters.
+
+---
 
 ### Timer Functionality
 
-Timer commands automatically turn OFF appliances after the selected duration.
+Append minutes to any ON command to auto-shutoff:
 
-```text
-light on 5
-fan on 10
-tv on 15
-switch on 5
-all on 20
+```
+fan on 30      → Fan turns ON, auto OFF after 30 minutes
+light on 10    → Light turns ON, auto OFF after 10 minutes
+all on 60      → All devices ON, auto OFF after 60 minutes
 ```
 
-For example, `fan on 10` turns the fan ON and automatically turns it OFF after 10 minutes.
+---
 
-### OLED Status Display
-
+### OLED Display
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/ba548a1e-3cd7-4a26-83f5-1b73cfc893a6" alt="OLED Appliance Status Display" width="400">
+  <img src="https://github.com/user-attachments/assets/b4ad039b-78d6-4044-a435-26afa7d58a68" alt="OLED Appliance Status Display" width="400">
 </p>
 
-The OLED display shows:
-
-* Selected appliance
-* Light status
-* Fan status
-* TV status
-* Switch status
-* ON or OFF state
-* Timer-related status when active
+The 128×64 OLED shows 4 rows — one per appliance — with:
+- An **icon** `[L]`, `[F]`, `[T]`, `[S]`
+- Device **name** and **ON/OFF** status
+- **Highlighted row** (inverted colors) = currently selected appliance for gesture control
 
 ---
+
 
 ## 📋 Bluetooth Command Reference
 
@@ -255,7 +246,7 @@ The MPU6050 sensor and OLED display share the I2C communication lines. The ESP32
 ## 🔄 System Flowchart
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/dbba3646-a2cb-4b0a-8fcd-4ac5d97d649d" alt="System Flowchart" width="500">
+  <img src="https://github.com/user-attachments/assets/dbba3646-a2cb-4b0a-8fcd-4ac5d97d649d" alt="System Flowchart" width="300">
 </p>
 
 The system initializes the ESP32, Bluetooth, MPU6050 sensor, OLED display, relay module, and FreeRTOS tasks. It then continuously reads voice and gesture inputs, processes the command, updates the relay output, and displays the latest appliance status on the OLED.
@@ -307,19 +298,6 @@ Install the following libraries from Arduino IDE Library Manager:
 ## 🧪 Results
 
 The prototype successfully controls the bulb, fan, TV load, and additional switch load using Bluetooth voice commands and MPU6050 gesture inputs. The OLED display updates appliance status in real time. Timer commands automatically turn OFF appliances after the selected duration.
-
----
-
-## 🔮 Future Scope
-
-* Wi-Fi-based remote control
-* Cloud dashboard integration
-* Mobile application development
-* Google Assistant and Alexa integration
-* Energy monitoring
-* Voice authentication
-* Machine-learning-based gesture recognition
-* Home security integration
 
 ---
 
