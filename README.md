@@ -42,11 +42,13 @@ Designed for **elderly users, differently-abled individuals**, and anyone who wa
 
 ## 🎥 Demo
 
-> 📸 Add your demo photos/video here after upload.
-
-| Hardware Setup | OLED Display | Bluetooth App |
-|:---:|:---:|:---:|
-| *(add photo)* | *(add photo)* | *(add screenshot)* |
+**Hardware Setup**
+>  <img width="1448" height="1086" alt="image" src="https://github.com/user-attachments/assets/27c0fc7a-5233-4092-af89-d5693fa4ab25" />
+**OLED Display**
+>  <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b4ad039b-78d6-4044-a435-26afa7d58a68" />
+**Arduino Bluetooth Controller App**
+>  <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/5dc2ee83-d859-4408-bac8-bb74486ee948" />
+https://play.google.com/store/apps/details?id=com.giristudio.hc05.bluetooth.arduino.control
 
 ---
 
@@ -227,7 +229,8 @@ The 128×64 OLED shows 4 rows — one per appliance — with:
 
 ## 📐 Circuit Diagram
 
-> 📁 See [`hardware/circuit_diagram.png`](hardware/circuit_diagram.png) *(add your diagram here)*
+> <img width="921" height="601" alt="image" src="https://github.com/user-attachments/assets/dd91b8d8-5c63-40c2-94a3-a467db88a7bc" />
+
 
 Key connections:
 - MPU-6050 and SSD1306 share I2C bus (SDA=21, SCL=22)
@@ -269,33 +272,6 @@ Use **Sketch → Include Library → Manage Libraries** to install:
 - Open *Serial Bluetooth Terminal* app
 - Type commands like `light on` and press send
 
----
-
-## 📁 Folder Structure
-
-```
-ESP32-VoiceGesture-HomeAutomation/
-│
-├── src/
-│   └── main.ino                  # Main Arduino source code
-│
-├── hardware/
-│   ├── circuit_diagram.png       # Wiring diagram (add yours)
-│   └── schematic.pdf             # Full schematic (optional)
-│
-├── docs/
-│   ├── project_report.pdf        # Full mini-project report
-│   └── block_diagram.png         # System block diagram
-│
-├── media/
-│   ├── demo/                     # Demo video / GIF
-│   ├── screenshots/              # OLED display photos
-│   └── circuit/                  # Hardware setup photos
-│
-├── .gitignore
-├── LICENSE
-└── README.md
-```
 
 ---
 
@@ -303,8 +279,8 @@ ESP32-VoiceGesture-HomeAutomation/
 
 | Name | USN |
 |------|-----|
-| Abhishek Shivanand Rajapure | 1MV23EC008 |
 | **Afnan Jhadwale** | 1MV23EC013 |
+| Abhishek Shivanand Rajapure | 1MV23EC008 |
 | Sangamesh Somaling Nugganatti | 1MV23EC093 |
 | S V Vikas | 1MV23EC089 |
 
