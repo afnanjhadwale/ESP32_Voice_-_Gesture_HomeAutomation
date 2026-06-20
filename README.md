@@ -1,191 +1,204 @@
 # 🏠 ESP32 Voice & Gesture Controlled Home Automation
 
-> A dual-mode smart home automation system using **ESP32**, **MPU-6050**, **Bluetooth**, and a **4-channel relay module** — controllable by hand gestures and voice commands without any internet dependency.
+> A dual-mode smart home automation system using **ESP32**, **MPU6050**, **Bluetooth**, **FreeRTOS**, **OLED Display**, and a **4-channel relay module**. Control appliances using voice commands or hand-tilt gestures without internet dependency.
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9a41fd10-cecf-4eb7-81df-b55f02f2c08a" alt="ESP32 Voice and Gesture Home Automation Prototype" width="850">
+</p>
 
 ---
 
 ## 📌 Table of Contents
 
-- [Overview](#-overview)
-- [Demo](#-demo)
-- [Features](#-features)
-- [System Architecture](#-system-architecture)
-- [Hardware Requirements](#-hardware-requirements)
-- [Pin Configuration](#-pin-configuration)
-- [Software & Libraries](#-software--libraries)
-- [How It Works](#-how-it-works)
-  - [Gesture Control](#gesture-control)
-  - [Voice / Bluetooth Control](#voice--bluetooth-control)
-  - [Timer Functionality](#timer-functionality)
-  - [OLED Display](#oled-display)
-- [Bluetooth Command Reference](#-bluetooth-command-reference)
-- [Circuit Diagram](#-circuit-diagram)
-- [Getting Started](#-getting-started)
-- [Folder Structure](#-folder-structure)
-- [Team](#-team)
-- [License](#-license)
+* [Overview](#-overview)
+* [Features](#-features)
+* [System Architecture](#-system-architecture)
+* [Hardware Requirements](#-hardware-requirements)
+* [Pin Configuration](#-pin-configuration)
+* [Software and Libraries](#-software-and-libraries)
+* [How It Works](#-how-it-works)
+
+  * [Voice Control](#voice-control)
+  * [Gesture Control](#gesture-control)
+  * [Timer Functionality](#timer-functionality)
+  * [OLED Status Display](#oled-status-display)
+* [Bluetooth Command Reference](#-bluetooth-command-reference)
+* [Circuit Diagram](#-circuit-diagram)
+* [Getting Started](#-getting-started)
+* [Results](#-results)
+* [Future Scope](#-future-scope)
+* [Author](#-author)
+* [License](#-license)
 
 ---
 
 ## 🔍 Overview
 
-Traditional home automation relies on physical switches or cloud-dependent voice assistants. This project provides a **fully offline, dual-mode** solution:
+Traditional home automation mainly depends on physical switches, remote controls, or internet-based voice assistants. This project provides a simple and low-cost alternative by combining **Bluetooth voice control** and **MPU6050-based gesture control**.
 
-| Mode | Technology | Input |
-|------|-----------|-------|
-| **Gesture** | MPU-6050 (Accelerometer + Gyroscope) | Tilt hand Left/Right to select, Tilt Up/Down to control |
-| **Voice** | ESP32 Bluetooth + Android App | Text commands like `"light on"`, `"fan off 10"` |
+The user can control four appliances:
 
-Designed for **elderly users, differently-abled individuals**, and anyone who wants a hands-free, internet-free smart home experience.
+| Appliance                | Relay Channel | Example Command |
+| ------------------------ | ------------: | --------------- |
+| Light                    |       Relay 1 | `light on`      |
+| Fan                      |       Relay 2 | `fan on`        |
+| TV                       |       Relay 3 | `tv on`         |
+| Switch / Additional Load |       Relay 4 | `switch on`     |
 
----
-
-## 🎥 Demo
-
-**Hardware Setup**
->  <img width="1448" height="1086" alt="image" src="https://github.com/user-attachments/assets/27c0fc7a-5233-4092-af89-d5693fa4ab25" />
-
-**Arduino Bluetooth Controller App**
->  <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/5dc2ee83-d859-4408-bac8-bb74486ee948" />
-https://play.google.com/store/apps/details?id=com.giristudio.hc05.bluetooth.arduino.control
+The ESP32 receives voice commands from a Bluetooth mobile application and gesture inputs from the MPU6050 sensor. It processes the input, controls the relay module, and updates the OLED display with the current appliance status.
 
 ---
 
 ## ✨ Features
 
-- 🎤 **Voice Control** via Bluetooth (no internet needed)
-- 🤚 **Gesture Control** using MPU-6050 tilt detection
-- 💡 **Controls 4 Appliances**: Light, Fan, TV, Switch
-- ⏱️ **Timer Support** — auto turn-off after N minutes
-- 📺 **OLED Status Display** — real-time appliance status with highlight on selected device
-- 🔋 **Active-Low Relay Support** — works with standard relay modules
-- 🔁 **Debounced Gesture Detection** — prevents false triggers
-- 💬 **Dual Command Mode** — single-character (`1`, `A`) and full text (`light on 5`)
+* 🎤 Bluetooth voice control without internet
+* 🤚 Hand-tilt gesture control using MPU6050
+* 💡 Controls four appliances independently
+* ⏱️ Timer-based appliance control
+* 📺 OLED display for real-time appliance status
+* 🔁 FreeRTOS-based multitasking
+* 🔌 4-channel relay-based appliance switching
+* 📱 Supports text commands and Bluetooth app buttons
+* ♿ Useful for elderly users and differently-abled users
+* 🌐 Future-ready design for Wi-Fi and IoT integration
 
 ---
 
 ## 🏗️ System Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    ESP32 Core                       │
-│                                                     │
-│   ┌──────────────┐      ┌───────────────────────┐   │
-│   │ Bluetooth RX │      │ MPU-6050 Gesture Read │   │
-│   │ (Voice Cmds) │      │ (Accel ax, ay values) │   │
-│   └──────┬───────┘      └──────────┬────────────┘   │
-│          │                         │                │
-│   ┌──────▼─────────────────────────▼───────────┐    │
-│   │          Command Processor / State Machine │    │
-│   └──────────────────────┬─────────────────────┘    │
-│                          │                          │
-│   ┌──────────────────────▼──────────────────────┐   │
-│   │     Relay Control (4-Channel, Active-Low)   │   │
-│   │   PIN 25 - Light  |  PIN 26 - Fan           │   │
-│   │   PIN 27 - TV     |  PIN 14 - Switch        │   │
-│   └─────────────────────────────────────────────┘   │
-│                                                     │
-│   ┌─────────────────────────────────────────────┐   │
-│   │       OLED SSD1306 (I2C @ 0x3C)             │   │
-│   │    Real-time status with selection cursor   │   │
-│   └─────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/32de0e30-69b8-44d6-8e9b-1d8481e50dc7" alt="Block Diagram" width="850">
+</p>
+
+The ESP32 acts as the main controller. It receives voice commands through Bluetooth and gesture data from the MPU6050 sensor. FreeRTOS helps the ESP32 handle voice input, gesture reading, timer checking, relay control, and OLED updating smoothly.
+
+The relay module controls the connected appliances, while the OLED display shows appliance selection and ON or OFF status.
 
 ---
 
 ## 🔧 Hardware Requirements
 
-| Component | Quantity | Purpose |
-|-----------|----------|---------|
-| **ESP32 Dev Board** | 1 | Main microcontroller |
-| **MPU-6050** | 1 | Gesture detection (accel + gyro) |
-| **SSD1306 OLED (128×64)** | 1 | Status display |
-| **4-Channel Relay Module (Active-Low)** | 1 | Appliance switching |
-| **Jumper Wires** | As needed | Connections |
-| **Power Supply (5V/3.3V)** | 1 | Power for ESP32 & sensors |
-| **Android Phone** | 1 | Bluetooth terminal app |
+| Component                           |    Quantity | Purpose                              |
+| ----------------------------------- | ----------: | ------------------------------------ |
+| ESP32 Development Board             |           1 | Main controller                      |
+| MPU6050 Accelerometer and Gyroscope |           1 | Hand-tilt gesture detection          |
+| OLED Display 0.96 inch              |           1 | Appliance status display             |
+| 4-Channel Relay Module              |           1 | Controls four appliances             |
+| Bulb and Holder                     |           1 | Light load demonstration             |
+| DC Fan                              |           1 | Fan load demonstration               |
+| Switch Sockets                      |           2 | TV and additional load demonstration |
+| 5 V Power Supply                    |           1 | Power supply                         |
+| Jumper Wires                        | As required | Component connections                |
+| Android Phone                       |           1 | Bluetooth voice and button control   |
 
 ---
 
 ## 🔌 Pin Configuration
 
-| ESP32 Pin | Connected To | Function |
-|-----------|-------------|----------|
-| GPIO 21 | MPU-6050 SDA / OLED SDA | I2C Data |
-| GPIO 22 | MPU-6050 SCL / OLED SCL | I2C Clock |
-| GPIO 25 | Relay 1 IN | Light control |
-| GPIO 26 | Relay 2 IN | Fan control |
-| GPIO 27 | Relay 3 IN | TV control |
-| GPIO 14 | Relay 4 IN | Switch control |
+| ESP32 Pin | Connected To             | Function       |
+| --------: | ------------------------ | -------------- |
+|   GPIO 21 | MPU6050 SDA and OLED SDA | I2C data line  |
+|   GPIO 22 | MPU6050 SCL and OLED SCL | I2C clock line |
+|   GPIO 25 | Relay IN1                | Light control  |
+|   GPIO 26 | Relay IN2                | Fan control    |
+|   GPIO 27 | Relay IN3                | TV control     |
+|   GPIO 14 | Relay IN4                | Switch control |
+|     3.3 V | MPU6050 VCC              | Sensor power   |
+|       GND | All modules              | Common ground  |
 
-> ⚠️ All relay pins are **ACTIVE-LOW** (LOW = ON, HIGH = OFF). Set `RELAY_ACTIVE_LOW true` in code.
+> ⚠️ Most 4-channel relay modules are active-LOW. In that case, `LOW` turns the relay ON and `HIGH` turns the relay OFF.
 
 ---
 
-## 📦 Software & Libraries
+## 📦 Software and Libraries
 
-Install the following in **Arduino IDE** (via Library Manager or Board Manager):
+The firmware is developed using **Arduino IDE**.
 
-| Library | Install From | Purpose |
-|---------|-------------|---------|
-| `BluetoothSerial` | ESP32 Arduino Core | Bluetooth communication |
-| `Wire` | Built-in | I2C protocol |
-| `MPU6050` | Library Manager (Electronic Cats / jrowberg) | IMU sensor |
-| `Adafruit GFX` | Library Manager | Graphics base |
-| `Adafruit SSD1306` | Library Manager | OLED display driver |
+| Software / Library   | Purpose                      |
+| -------------------- | ---------------------------- |
+| Arduino IDE          | Code development and upload  |
+| ESP32 Board Package  | ESP32 board support          |
+| BluetoothSerial      | Bluetooth communication      |
+| Wire                 | I2C communication            |
+| Adafruit GFX Library | OLED graphics support        |
+| Adafruit SSD1306     | OLED display driver          |
+| MPU6050 Library      | MPU6050 sensor communication |
+| FreeRTOS             | Parallel task management     |
 
-**Board Setup in Arduino IDE:**
-1. Add ESP32 board URL: `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
-2. Install **esp32** board package by Espressif Systems
-3. Select board: **ESP32 Dev Module**
-4. Upload speed: **115200**
+### Arduino IDE Board Setup
+
+1. Install Arduino IDE.
+2. Open **File → Preferences**.
+3. Add the ESP32 board URL:
+
+```text
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+```
+
+4. Open **Tools → Board → Boards Manager**.
+5. Search for `ESP32` and install the package by Espressif Systems.
+6. Select **ESP32 Dev Module**.
+7. Select the correct COM port.
+8. Upload the code.
 
 ---
 
 ## ⚙️ How It Works
 
+### Voice Control
+
+The user speaks a command using a Bluetooth mobile application. The application converts speech into text and sends the command to the ESP32 through Bluetooth.
+
+For example:
+
+```text
+fan on
+```
+
+The ESP32 receives the command, activates Relay 2, turns the fan ON, and updates the OLED display.
+
 ### Gesture Control
 
-The MPU-6050 reads raw accelerometer values every loop cycle. Normalized `ax` and `ay` values determine gesture:
+The MPU6050 sensor detects hand tilt using accelerometer and gyroscope readings.
 
-| Tilt Direction | Axis | Threshold | Action |
-|---------------|------|-----------|--------|
-| **Right** | ax > +1.2 | Positive X | Select next appliance |
-| **Left** | ax < -1.2 | Negative X | Select previous appliance |
-| **Up** | ay > +1.2 | Positive Y | Turn ON selected appliance |
-| **Down** | ay < -1.2 | Negative Y | Turn OFF selected appliance |
+| Gesture       | Action                      |
+| ------------- | --------------------------- |
+| Tilt Left     | Select previous appliance   |
+| Tilt Right    | Select next appliance       |
+| Tilt Forward  | Turn ON selected appliance  |
+| Tilt Backward | Turn OFF selected appliance |
 
-A **500ms debounce** prevents accidental repeated triggers. The threshold (`1.2g`) is adjustable in code.
-
----
-
-### Voice / Bluetooth Control
-
-Connect to Bluetooth device named **`ESP32_Home`** using any serial Bluetooth terminal (e.g. *Serial Bluetooth Terminal* on Android).
-
-Send text commands (followed by newline `\n`) or single characters.
-
----
+The OLED display highlights the selected appliance during gesture operation.
 
 ### Timer Functionality
 
-Append minutes to any ON command to auto-shutoff:
+Timer commands automatically turn OFF appliances after the selected duration.
 
+```text
+light on 5
+fan on 10
+tv on 15
+switch on 5
+all on 20
 ```
-fan on 30      → Fan turns ON, auto OFF after 30 minutes
-light on 10    → Light turns ON, auto OFF after 10 minutes
-all on 60      → All devices ON, auto OFF after 60 minutes
-```
 
----
+For example, `fan on 10` turns the fan ON and automatically turns it OFF after 10 minutes.
 
-### OLED Display
->  <img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b4ad039b-78d6-4044-a435-26afa7d58a68" />
-The 128×64 OLED shows 4 rows — one per appliance — with:
-- An **icon** `[L]`, `[F]`, `[T]`, `[S]`
-- Device **name** and **ON/OFF** status
-- **Highlighted row** (inverted colors) = currently selected appliance for gesture control
+### OLED Status Display
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/ba548a1e-3cd7-4a26-83f5-1b73cfc893a6" alt="OLED Appliance Status Display" width="400">
+</p>
+
+The OLED display shows:
+
+* Selected appliance
+* Light status
+* Fan status
+* TV status
+* Switch status
+* ON or OFF state
+* Timer-related status when active
 
 ---
 
@@ -193,49 +206,59 @@ The 128×64 OLED shows 4 rows — one per appliance — with:
 
 ### Text Commands
 
-| Command | Action |
-|---------|--------|
-| `light on` | Turn light ON |
-| `light off` | Turn light OFF |
-| `fan on` | Turn fan ON |
-| `fan off` | Turn fan OFF |
-| `tv on` | Turn TV ON |
-| `tv off` | Turn TV OFF |
-| `switch on` | Turn switch ON |
-| `switch off` | Turn switch OFF |
-| `all on` | Turn ALL devices ON |
-| `all off` | Turn ALL devices OFF |
-| `light on 15` | Light ON with 15-minute timer |
-| `fan on 30` | Fan ON with 30-minute timer |
-| `status` | Print all device states to serial |
+| Command       | Action                               |
+| ------------- | ------------------------------------ |
+| `light on`    | Turn light ON                        |
+| `light off`   | Turn light OFF                       |
+| `light on 5`  | Turn light ON for 5 minutes          |
+| `fan on`      | Turn fan ON                          |
+| `fan off`     | Turn fan OFF                         |
+| `fan on 5`    | Turn fan ON for 5 minutes            |
+| `tv on`       | Turn TV ON                           |
+| `tv off`      | Turn TV OFF                          |
+| `tv on 5`     | Turn TV ON for 5 minutes             |
+| `switch on`   | Turn switch ON                       |
+| `switch off`  | Turn switch OFF                      |
+| `switch on 5` | Turn switch ON for 5 minutes         |
+| `all on`      | Turn all appliances ON               |
+| `all off`     | Turn all appliances OFF              |
+| `all on 5`    | Turn all appliances ON for 5 minutes |
+| `status`      | Show current appliance status        |
 
 ### Single-Character Commands
 
-| Char | Action |
-|------|--------|
-| `1` | Light ON |
-| `A` / `a` | Light OFF |
-| `2` | Fan ON |
-| `B` / `b` | Fan OFF |
-| `3` | TV ON |
-| `C` / `c` | TV OFF |
-| `4` | Switch ON |
-| `D` / `d` | Switch OFF |
-| `5` | ALL ON |
-| `0` | ALL OFF |
+| Command    | Action             |
+| ---------- | ------------------ |
+| `1`        | Light ON           |
+| `A` or `a` | Light OFF          |
+| `2`        | Fan ON             |
+| `B` or `b` | Fan OFF            |
+| `3`        | TV ON              |
+| `C` or `c` | TV OFF             |
+| `4`        | Switch ON          |
+| `D` or `d` | Switch OFF         |
+| `5`        | All appliances ON  |
+| `0`        | All appliances OFF |
 
 ---
 
 ## 📐 Circuit Diagram
 
-> <img width="921" height="601" alt="image" src="https://github.com/user-attachments/assets/dd91b8d8-5c63-40c2-94a3-a467db88a7bc" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/68666590-73b3-4cdd-80b3-9323c9912ad7" alt="Circuit Diagram" width="900">
+</p>
 
+The MPU6050 sensor and OLED display share the I2C communication lines. The ESP32 controls the four relay inputs through GPIO pins. The relay module acts as an electrical isolation interface between the ESP32 control circuit and the connected appliance loads.
 
-Key connections:
-- MPU-6050 and SSD1306 share I2C bus (SDA=21, SCL=22)
-- Relay module powered by **5V**, signal pins from ESP32 GPIO
-- Relay **COM** terminals connect to appliance live wire
-- Relay **NO** (Normally Open) for default-off devices
+---
+
+## 🔄 System Flowchart
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/dbba3646-a2cb-4b0a-8fcd-4ac5d97d649d" alt="System Flowchart" width="500">
+</p>
+
+The system initializes the ESP32, Bluetooth, MPU6050 sensor, OLED display, relay module, and FreeRTOS tasks. It then continuously reads voice and gesture inputs, processes the command, updates the relay output, and displays the latest appliance status on the OLED.
 
 ---
 
@@ -244,59 +267,77 @@ Key connections:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/afnanjhadwale/ESP32-VoiceGesture-HomeAutomation.git
-cd ESP32-VoiceGesture-HomeAutomation
+git clone https://github.com/afnanjhadwale/ESP32-Voice-Gesture-Home-Automation.git
+cd ESP32-Voice-Gesture-Home-Automation
 ```
 
-### 2. Open in Arduino IDE
+### 2. Open the Code
 
-Open `src/main.ino` in Arduino IDE.
+Open this file in Arduino IDE:
 
-### 3. Install Libraries
+```text
+src/ESP32_Voice_Gesture_Home_Automation.ino
+```
 
-Use **Sketch → Include Library → Manage Libraries** to install:
-- `Adafruit SSD1306`
-- `Adafruit GFX Library`
-- `MPU6050` (by Electronic Cats)
+### 3. Install Required Libraries
 
-### 4. Configure & Upload
+Install the following libraries from Arduino IDE Library Manager:
 
-- Select **ESP32 Dev Module** as board
-- Select correct COM port
-- Click **Upload**
+* Adafruit GFX Library
+* Adafruit SSD1306
+* MPU6050
+* ESP32 Board Package
 
-### 5. Connect via Bluetooth
+### 4. Upload the Code
 
-- Pair phone with `ESP32_Home`
-- Open *Serial Bluetooth Terminal* app
-- Type commands like `light on` and press send
+1. Connect ESP32 using USB cable.
+2. Select **ESP32 Dev Module**.
+3. Select the correct COM port.
+4. Click Upload.
 
+### 5. Connect Through Bluetooth
+
+1. Turn ON Bluetooth on your Android phone.
+2. Pair with `ESP32_Home`.
+3. Open a Bluetooth serial control application.
+4. Send commands such as `light on` or `fan on 5`.
 
 ---
 
-## 👥 Team
+## 🧪 Results
 
-| Name | USN |
-|------|-----|
-| **Afnan Jhadwale** | 1MV23EC013 |
-| Abhishek Shivanand Rajapure | 1MV23EC008 |
-| Sangamesh Somaling Nugganatti | 1MV23EC093 |
-| S V Vikas | 1MV23EC089 |
+The prototype successfully controls the bulb, fan, TV load, and additional switch load using Bluetooth voice commands and MPU6050 gesture inputs. The OLED display updates appliance status in real time. Timer commands automatically turn OFF appliances after the selected duration.
 
-**Guide:** Dr. Sheetal Belaldavar, Associate Professor, Dept. of ECE  
-**Institution:** Sir M. Visvesvaraya Institute of Technology, Bengaluru  
-**Affiliated to:** Visvesvaraya Technological University (VTU), Belagavi  
-**Academic Year:** 2025–26
+---
+
+## 🔮 Future Scope
+
+* Wi-Fi-based remote control
+* Cloud dashboard integration
+* Mobile application development
+* Google Assistant and Alexa integration
+* Energy monitoring
+* Voice authentication
+* Machine-learning-based gesture recognition
+* Home security integration
+
+---
+
+## 👤 Author
+
+**Afnan Jhadwale**
+
+Electronics and Communication Engineering
+
+Sir M. Visvesvaraya Institute of Technology, Bengaluru
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).  
-Feel free to use, fork, and improve — attribution appreciated!
+This project is licensed under the [MIT License](LICENSE).
 
----
 
 <p align="center">
-  Made with ❤️ at Sir MVIT, Bengaluru &nbsp;|&nbsp; ECE Dept &nbsp;|&nbsp; Mini Project BEC586
+  Built using ESP32, MPU6050, FreeRTOS, Bluetooth, OLED, and Relay Control
 </p>
